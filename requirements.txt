@@ -1,8 +1,1 @@
-streamlit
-numpy
-pandas
-plotly
-requests
-beautifulsoup4
-cloudscraper
-lxml
+pip install streamlit requests beautifulsoup4 cloudscraper openai pillow opencv-python plotly
