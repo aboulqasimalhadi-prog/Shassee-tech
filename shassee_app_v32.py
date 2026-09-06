@@ -14,7 +14,7 @@ from bs4 import BeautifulSoup
 import cloudscraper
 
 # ==============================================
-# 1. إعدادات الصفحة والتصميم (كما هي)
+# 1. إعدادات الصفحة والتصميم
 # ==============================================
 st.set_page_config(
     page_title="شاصي تك | SHASSEE TECH v32",
@@ -23,7 +23,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS المتقدم (نفس الكود السابق)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
@@ -174,11 +173,28 @@ st.markdown("""
         color: #FFFFFF !important;
         box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35) !important;
     }
+    .data-source-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        margin-right: 6px;
+        font-weight: bold;
+    }
+    .data-source-real {
+        background-color: rgba(16, 185, 129, 0.2);
+        color: #10B981;
+        border: 1px solid #10B981;
+    }
+    .data-source-sim {
+        background-color: rgba(245, 158, 11, 0.2);
+        color: #F59E0B;
+        border: 1px solid #F59E0B;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ==============================================
-# 2. دوال مساعدة للشعار والهيدر (نفس السابق)
+# 2. دوال مساعدة للشعار والهيدر
 # ==============================================
 def get_silver_car_b64():
     paths_to_try = [
@@ -308,7 +324,7 @@ EXCHANGE_RATE = 9.4
 SHIPPING_COST = 2250
 
 # ==============================================
-# 4. دوال جلب البيانات الذكية (القلب الجديد)
+# 4. دوال جلب البيانات الذكية
 # ==============================================
 
 def extract_clean_url(url):
@@ -324,11 +340,10 @@ def detect_platform(url):
         return "Copart"
     elif "iaai" in url.lower():
         return "IAAI"
-    return "Copart"  # افتراضي
+    return "Copart"
 
 def extract_lot_id(url):
     """استخلاص رقم اللوت من الرابط"""
-    # محاولة أنماط مختلفة
     patterns = [r'/lot/(\d+)', r'id=(\d+)', r'lotId=(\d+)']
     for pat in patterns:
         m = re.search(pat, url)
@@ -356,15 +371,15 @@ def fetch_from_apibara(lot_id, api_key):
     return None
 
 def fetch_from_scrapingbee(url, api_key):
-    """محاولة جلب الصفحة حقيقياً عبر ScrapingBee API بتشغيل الجافا سكربت والبروكسيات السكنية الممتازة لتجاوز الحظر"""
+    """محاولة جلب الصفحة عبر ScrapingBee API مع إعدادات متقدمة"""
     if not api_key:
         return None, None, "لم يتم إدخال مفتاح ترخيص ScrapingBee."
     try:
         response = requests.get(
             "https://app.scrapingbee.com/api/v1/",
             params={
-                "api_key": api_key, 
-                "url": url, 
+                "api_key": api_key,
+                "url": url,
                 "render_js": "true",
                 "premium_proxy": "true",
                 "wait_for": "5000",
@@ -377,24 +392,14 @@ def fetch_from_scrapingbee(url, api_key):
             return response.text, 200, None
         elif response.status_code == 401:
             return None, 401, "مفتاح ترخيص ScrapingBee غير صحيح أو انتهى اشتراكه."
+        elif response.status_code == 402:
+            return None, 402, "نفذت كوتا الطلبات المجانية الخاصة بك في حساب ScrapingBee."
         elif response.status_code == 403:
-            return None, 403, "نفذت كوتا الطلبات المجانية الخاصة بك في حساب ScrapingBee."
+            return None, 403, "تم حظر الطلب من قبل الموقع أو الخدمة."
         else:
             return None, response.status_code, f"استجاب ScrapingBee برمز خطأ {response.status_code}."
     except Exception as e:
         return None, None, f"فشل الاتصال بخادم ScrapingBee: {str(e)}"
-
-    try:
-        response = requests.get(
-            "https://app.scrapingbee.com/api/v1/",
-            params={"api_key": api_key, "url": url, "render_js": "false"},
-            timeout=10
-        )
-        if response.status_code == 200:
-            return response.text
-    except Exception:
-        pass
-    return None
 
 def fetch_from_cloudscraper(url):
     """محاولة جلب الصفحة مباشرة باستخدام cloudscraper"""
@@ -407,15 +412,11 @@ def fetch_from_cloudscraper(url):
         pass
     return None
 
-
 def universal_extract_from_html(html, platform, lot_id):
-    """استخراج حقيقي وقوي لبيانات وصور المزادات باستخدام JSON-LD والـ Meta Tags"""
+    """استخراج قوي للبيانات والصور باستخدام JSON-LD، Open Graph، ومحددات مرنة"""
     soup = BeautifulSoup(html, 'lxml')
-    import random
-    import re
-    import json
     
-    # Check if this is a Cloudflare block page
+    # التحقق من وجود حماية Cloudflare
     html_lower = html.lower()
     if "cloudflare" in html_lower or "enable javascript" in html_lower or "captcha" in html_lower or "access denied" in html_lower or "one more step" in html_lower:
         return None
@@ -423,7 +424,7 @@ def universal_extract_from_html(html, platform, lot_id):
     data = {
         "year": 2022,
         "make": "Toyota",
-        "model": "Toyota Tacoma",
+        "model": "Unknown",
         "vin": "".join(random.choices("ABCDEFGHJKLMNPQRSTUVWXYZ0123456789", k=17)),
         "location": "Texas (Houston)",
         "title": "Salvage Title",
@@ -433,14 +434,13 @@ def universal_extract_from_html(html, platform, lot_id):
         "scraped": True
     }
     
-    # 1. محاولة استخراج كود الـ Schema (JSON-LD) المدمج بالصفحة
-    schema_found = False
+    # 1. استخراج من JSON-LD
     for script in soup.find_all("script", type="application/ld+json"):
         try:
             schema = json.loads(script.string)
             if isinstance(schema, list):
                 schema = schema[0]
-            if schema.get("@type") in ["Car", "Vehicle", "Product"] or "name" in schema:
+            if schema.get("@type") in ["Car", "Vehicle", "Product"]:
                 name = schema.get("name", "")
                 if name:
                     year_match = re.search(r'\b(20[0-2][0-9]|199[0-9])\b', name)
@@ -450,47 +450,43 @@ def universal_extract_from_html(html, platform, lot_id):
                     if len(words) >= 2:
                         data["make"] = words[0]
                         data["model"] = name
-                
-                # الصور الحقيقية للسيارة
-                img_val = schema.get("image")
-                if img_val:
-                    if isinstance(img_val, list):
-                        data["images"] = [img for img in img_val if isinstance(img, str)]
-                    elif isinstance(img_val, str):
-                        data["images"] = [img_val]
-                
+                img = schema.get("image")
+                if img:
+                    if isinstance(img, list):
+                        data["images"] = [i for i in img if isinstance(i, str)]
+                    elif isinstance(img, str):
+                        data["images"] = [img]
                 brand = schema.get("brand")
                 if brand:
                     if isinstance(brand, dict):
                         data["make"] = brand.get("name", data["make"])
                     elif isinstance(brand, str):
                         data["make"] = brand
-                schema_found = True
                 break
         except Exception:
             pass
-            
-    # 2. القراءة عبر الـ OpenGraph Meta Tags (عالية الدقة ومقاومة لتغير التصميم)
-    og_title_tag = soup.find("meta", attrs={"property": "og:title"})
-    og_title = og_title_tag.get("content", "") if og_title_tag else ""
-    if og_title:
-        year_match = re.search(r'\b(20[0-2][0-9]|199[0-9])\b', og_title)
+    
+    # 2. استخراج من Open Graph
+    og_title = soup.find("meta", attrs={"property": "og:title"})
+    if og_title and og_title.get("content"):
+        title_text = og_title.get("content")
+        year_match = re.search(r'\b(20[0-2][0-9]|199[0-9])\b', title_text)
         if year_match:
             data["year"] = int(year_match.group(1))
         # تنظيف العنوان
-        cleaned_title = re.sub(r'for sale.*$', '', og_title, flags=re.IGNORECASE).strip()
-        words = cleaned_title.split()
+        cleaned = re.sub(r'for sale.*$', '', title_text, flags=re.IGNORECASE).strip()
+        words = cleaned.split()
         if len(words) >= 2:
             data["make"] = words[1] if words[0].isdigit() else words[0]
-            data["model"] = cleaned_title
-            
-    og_image_tag = soup.find("meta", attrs={"property": "og:image"}) or soup.find("meta", attrs={"name": "twitter:image"})
-    if og_image_tag and og_image_tag.get("content"):
-        img_url = og_image_tag.get("content")
-        if img_url not in data["images"]:
+            data["model"] = cleaned
+    
+    og_image = soup.find("meta", attrs={"property": "og:image"}) or soup.find("meta", attrs={"name": "twitter:image"})
+    if og_image and og_image.get("content"):
+        img_url = og_image.get("content")
+        if img_url and img_url not in data["images"]:
             data["images"].append(img_url)
-            
-    # 3. محددات الـ CSS الكلاسيكية
+    
+    # 3. محددات CSS التقليدية
     title_tag = soup.select_one("h1[data-uname='lotDetailHeader']") or soup.select_one("h1.lot-title") or soup.select_one(".vehicle-title")
     if title_tag:
         title_text = title_tag.text.strip()
@@ -501,16 +497,15 @@ def universal_extract_from_html(html, platform, lot_id):
         if len(words) >= 2:
             data["make"] = words[0]
             data["model"] = title_text
-            
-    # الموقع والسند والسعر
+    
     loc_tag = soup.select_one("div[data-uname='locationValue']") or soup.select_one(".location-value") or soup.select_one(".yard-name")
     if loc_tag:
         data["location"] = loc_tag.text.strip()
-        
+    
     title_tag2 = soup.select_one("div[data-uname='titleValue']") or soup.select_one(".title-value") or soup.select_one(".document-type")
     if title_tag2:
         data["title"] = title_tag2.text.strip()
-        
+    
     bid_tag = soup.select_one("span[data-uname='bidPrice']") or soup.select_one(".current-bid") or soup.select_one(".bid-price")
     if bid_tag:
         bid_text = re.sub(r'[^\d.]', '', bid_tag.text.strip())
@@ -519,49 +514,42 @@ def universal_extract_from_html(html, platform, lot_id):
                 data["current_bid"] = float(bid_text)
             except ValueError:
                 pass
-                
+    
     vin_tag = soup.select_one("div[data-uname='vinValue']") or soup.select_one(".vin-value") or soup.select_one("[data-uname='vin']")
     if vin_tag:
         data["vin"] = vin_tag.text.strip()
-        
+    
+    # صور إضافية من IAAI
     if platform == "IAAI":
         thumb_images = soup.select(".slide img") or soup.select("img.thumb") or soup.select(".gallery img")
         for img in thumb_images:
             src = img.get("src") or img.get("data-src")
             if src and src.startswith("http") and src not in data["images"]:
                 data["images"].append(src)
-                
+    
+    # صور افتراضية إذا لم توجد
     if not data["images"]:
-        if "tacoma" in data["model"].lower():
+        model_lower = data["model"].lower()
+        if "tacoma" in model_lower:
             data["images"] = [
                 "https://images.unsplash.com/photo-1617469767053-d3b508a0d825?auto=format&fit=crop&q=80&w=600",
                 "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=300"
             ]
-        elif "4runner" in data["model"].lower():
+        elif "4runner" in model_lower:
             data["images"] = [
                 "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600",
                 "https://images.unsplash.com/photo-1617469767053-d3b508a0d825?auto=format&fit=crop&q=80&w=300"
             ]
         else:
             data["images"] = ["https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600"]
-            
+    
     return data
-
-def extract_copart_data(html):
-    """استخراج البيانات من HTML صفحة كوبارت عبر المحرك الموحد"""
-    return universal_extract_from_html(html, "Copart", "temp")
-
-def extract_iaai_data(html):
-    """استخراج البيانات من HTML صفحة IAAI عبر المحرك الموحد"""
-    return universal_extract_from_html(html, "IAAI", "temp")
 
 def generate_smart_guess(url, platform, lot_id):
     """التخمين الذكي من الرابط وقاعدة بيانات مدمجة"""
-    # استخدم معرف اللوت كبذرة لتوليد بيانات متسقة
     seed = int(hashlib.md5(lot_id.encode()).hexdigest(), 16) % 10000000
     r_gen = random.Random(seed)
     
-    # استخراج كلمات مفتاحية من الرابط
     url_lower = url.lower()
     year_match = re.search(r'\b(20[0-2][0-9]|199[0-9])\b', url)
     year = int(year_match.group(1)) if year_match else 2022
@@ -584,7 +572,6 @@ def generate_smart_guess(url, platform, lot_id):
     current_bid = r_gen.choice([3200, 4500, 5800, 2900, 6400])
     impact = r_gen.choice(["أمامية يسار (Front-Left Impact)", "أمامية يمين (Front-Right Impact)", "خلفية (Rear Impact)", "جانبية (Side Impact)"])
     
-    # حساب التكلفة الأرضية حسب الموقع
     ground_cost = 450
     if "texas" in location.lower():
         ground_cost = 450
@@ -595,7 +582,6 @@ def generate_smart_guess(url, platform, lot_id):
     elif "florida" in location.lower():
         ground_cost = 550
     
-    # القيمة السوقية في ليبيا
     if "tacoma" in model.lower():
         market_val_lyd = 95000
     elif "4runner" in model.lower():
@@ -605,7 +591,6 @@ def generate_smart_guess(url, platform, lot_id):
     else:
         market_val_lyd = 65000
     
-    # قطع OEM حسب الموديل
     if "tacoma" in model.lower():
         oem_parts = [
             {"part": "مصد خلفي كامل", "oem": "52159-04020", "desc": "هيكل خلفي تجميلي"},
@@ -643,12 +628,34 @@ def generate_smart_guess(url, platform, lot_id):
         "current_bid": current_bid,
         "market_val_lyd": market_val_lyd,
         "oem_parts": oem_parts,
-        "scraped": False,  # تم التخمين وليس سحب حقيقي
-        "url": url
+        "scraped": False,
+        "url": url,
+        "images": []
+    }
+
+def build_lot_from_data(data, clean_url, platform, lot_id, scraped=True):
+    """بناء كائن سيارة موحد مع جميع الحقول المطلوبة"""
+    return {
+        "id": f"LOT-{lot_id}",
+        "vin": data.get("vin", ""),
+        "make": data.get("make", "Toyota"),
+        "model": data.get("model", "Unknown"),
+        "year": data.get("year", 2022),
+        "platform": platform,
+        "location": data.get("location", "Unknown"),
+        "ground_cost": 450,
+        "title": data.get("title", "Salvage Title"),
+        "impact": data.get("impact", "خلفية (Rear Impact)"),
+        "current_bid": float(data.get("current_bid", 3000)),
+        "market_val_lyd": data.get("market_val_lyd", 95000),
+        "oem_parts": data.get("oem_parts", [{"part": "غير محدد", "oem": "N/A", "desc": "سيتم تحديثه"}]),
+        "scraped": scraped,
+        "url": clean_url,
+        "images": data.get("images", [])
     }
 
 def smart_parse_auction_url(url):
-    """الدالة الرئيسية لجلب البيانات بذكاء حقيقي من ساحة المزاد"""
+    """الدالة الرئيسية لجلب البيانات بذكاء حقيقي"""
     clean_url = extract_clean_url(url)
     platform = detect_platform(clean_url)
     lot_id = extract_lot_id(clean_url)
@@ -656,75 +663,42 @@ def smart_parse_auction_url(url):
     st.session_state["last_scrape_status"] = ""
     st.session_state["last_scrape_error"] = ""
     
-    # 1. محاولة Apibara API
+    # 1. محاولة Apibara
     api_key = st.session_state.get("apibara_key", "")
     if api_key:
         api_data = fetch_from_apibara(lot_id, api_key)
         if api_data:
             st.session_state["last_scrape_status"] = "نجاح عبر Apibara"
-            return {
-                "id": f"LOT-{lot_id}",
-                "vin": api_data.get("vin", ""),
-                "make": api_data.get("make", "Toyota"),
-                "model": api_data.get("model", "Unknown"),
-                "year": int(api_data.get("year", 2022)),
-                "platform": api_data.get("platform", platform),
-                "location": api_data.get("location", "Unknown"),
-                "ground_cost": 450,
-                "title": api_data.get("title", "Salvage Title"),
-                "impact": api_data.get("impact", "خلفية (Rear Impact)"),
-                "current_bid": float(api_data.get("current_bid", 3000)),
-                "market_val_lyd": 95000,
-                "oem_parts": [{"part": "غير محدد", "oem": "N/A", "desc": "سيتم تحديثه"}],
-                "scraped": True,
-                "url": clean_url,
-                "images": api_data.get("images", [])
-            }
-            
-    # 2. محاولة ScrapingBee حقيقياً
+            return build_lot_from_data(api_data, clean_url, platform, lot_id, scraped=True)
+    
+    # 2. محاولة ScrapingBee
     scrapingbee_key = st.session_state.get("scrapingbee_key", "")
     if scrapingbee_key:
-        html, status_code, err_msg = fetch_from_scrapingbee(clean_url, scrapingbee_key)
+        html, status, err = fetch_from_scrapingbee(clean_url, scrapingbee_key)
         if html:
             data = universal_extract_from_html(html, platform, lot_id)
             if data is not None:
-                data["id"] = f"LOT-{lot_id}"
-                data["ground_cost"] = 450
-                data["market_val_lyd"] = 95000
-                data["oem_parts"] = [{"part": "غير محدد", "oem": "N/A", "desc": "سيتم تحديثه"}]
-                data["scraped"] = True
-                data["url"] = clean_url
                 st.session_state["last_scrape_status"] = "نجاح عبر ScrapingBee"
-                return data
+                return build_lot_from_data(data, clean_url, platform, lot_id, scraped=True)
             else:
-                st.session_state["last_scrape_error"] = "حظر حماية المزادات (Cloudflare Anti-Bot) اكتشف طلب ScrapingBee وأعاد صفحة تحدي."
+                st.session_state["last_scrape_error"] = "حظر حماية المزادات (Cloudflare) اكتشف طلب ScrapingBee."
         else:
-            st.session_state["last_scrape_error"] = f"فشل السحب بـ ScrapingBee: {err_msg}"
-            
-    # 3. محاولة Cloudscraper المباشر
+            st.session_state["last_scrape_error"] = f"فشل السحب بـ ScrapingBee: {err}"
+    
+    # 3. محاولة Cloudscraper
     html = fetch_from_cloudscraper(clean_url)
     if html:
         data = universal_extract_from_html(html, platform, lot_id)
         if data is not None:
-            data["id"] = f"LOT-{lot_id}"
-            data["ground_cost"] = 450
-            data["market_val_lyd"] = 95000
-            data["oem_parts"] = [{"part": "غير محدد", "oem": "N/A", "desc": "سيتم تحديثه"}]
-            data["scraped"] = True
-            data["url"] = clean_url
             st.session_state["last_scrape_status"] = "نجاح عبر Cloudscraper"
-            return data
+            return build_lot_from_data(data, clean_url, platform, lot_id, scraped=True)
         else:
             if not st.session_state.get("last_scrape_error"):
-                st.session_state["last_scrape_error"] = "حظر حماية Cloudflare اكتشف طلب Cloudscraper المباشر وأعاد صفحة تحدي."
-    else:
-        if not st.session_state.get("last_scrape_error"):
-            st.session_state["last_scrape_error"] = "فشل السحب المباشر بسبب حظر حماية Cloudflare لمواقع المزادات."
-            
+                st.session_state["last_scrape_error"] = "حظر حماية Cloudflare اكتشف طلب Cloudscraper."
+    
     # 4. التخمين الذكي (fallback)
     st.session_state["last_scrape_status"] = "محاكاة احتياطية"
     return generate_smart_guess(clean_url, platform, lot_id)
-
 
 # ==============================================
 # 5. تهيئة قاعدة البيانات المحلية (lots_db)
@@ -780,6 +754,15 @@ if "lots_db" not in st.session_state:
         },
     ]
 
+# ===== التصحيح الإلزامي: تأكد من وجود مفتاح platform في جميع العناصر =====
+for lot in st.session_state.lots_db:
+    if "platform" not in lot:
+        # حاول استنتاج المنصة من الرابط أو الـ id
+        if "iaai" in lot.get("url", "").lower() or "IAAI" in lot.get("id", ""):
+            lot["platform"] = "IAAI"
+        else:
+            lot["platform"] = "Copart"
+
 # ==============================================
 # 6. واجهة التطبيق (Tabs)
 # ==============================================
@@ -802,7 +785,6 @@ with tab1:
     </div>
     """, unsafe_allow_html=True)
     
-    # حقل إدخال الرابط
     st.markdown("""
     <div style="background: rgba(16, 185, 129, 0.08); border-right: 4px solid #10B981; padding: 18px; border-radius: 12px; margin-bottom: 25px;">
         <b style="color: #10B981; font-size:16px;">🔗 ربط ذكي متعدد الطبقات:</b><br>
@@ -824,7 +806,6 @@ with tab1:
         st.markdown("<div style='padding-top: 28px;'></div>", unsafe_allow_html=True)
         btn_trigger = st.button("⚡ سحب البيانات", key="btn_smart_fetch")
     
-    # تنظيف الرابط
     clean_url_input = ""
     if raw_url_input:
         match = re.search(r'(https?://[^\s\)"\'<>]+)', raw_url_input)
@@ -840,29 +821,25 @@ with tab1:
         with st.spinner("⏳ جاري جلب البيانات باستخدام الطبقات الذكية..."):
             new_lot = smart_parse_auction_url(clean_url_input)
             
-            # Show actual honest feedback of what API call succeeded or failed
             scrape_err = st.session_state.get("last_scrape_error", "")
             scrape_status = st.session_state.get("last_scrape_status", "")
             
             if "نجاح" in scrape_status:
                 st.success(f"🎉 {scrape_status}!")
-                # Extract real images to display
                 if new_lot.get("images"):
                     st.toast("📸 تم استخلاص صور ومعاينة السيارة الحقيقية من ساحة المزاد!")
             else:
                 if scrape_err:
                     st.error(f"❌ {scrape_err}")
-                st.warning("⚠️ حظر حماية المزادات (Cloudflare Shield) اكتشف الطلب المباشر المجهول. تم تنشيط محاكاة ذكية متسقة، يرجى كتابة مفتاح ScrapingBee في الشريط الجانبي لتخطي الحظر، أو يمكنك تعديل البيانات يدوياً أدناه لتناسب رغبتك.")
+                st.warning("⚠️ حظر حماية المزادات (Cloudflare Shield) اكتشف الطلب. تم تنشيط محاكاة ذكية متسقة، يرجى كتابة مفتاح ScrapingBee في الشريط الجانبي لتخطي الحظر، أو يمكنك تعديل البيانات يدوياً أدناه.")
             
-            # التحقق من عدم التكرار
             exists = any(lot["id"] == new_lot["id"] for lot in st.session_state.lots_db)
             if not exists:
                 st.session_state.lots_db.insert(0, new_lot)
             st.session_state["selected_car_id"] = new_lot["id"]
-            st.toast(f"🎉 تم جلب وتنشيط السيارة: {new_lot['model']} ({new_lot['id']})")
+            st.toast(f"🎉 تم جلب وتنشيط السيارة: {new_lot.get('model', 'Unknown')} ({new_lot.get('id', '')})")
             st.rerun()
     
-    # عرض اللوتات المفلترة
     st.markdown("<hr style='border-color: rgba(255,255,255,0.15);'>", unsafe_allow_html=True)
     
     col_f1, col_f2, col_f3 = st.columns(3)
@@ -875,45 +852,49 @@ with tab1:
     
     filter_by_prefs = st.checkbox("🎯 تصفية حسب تفضيلاتي الشخصية", value=False)
     
-    # تصفية القائمة
     filtered_lots = []
     for lot in st.session_state.lots_db:
-        if search_platform != "الكل" and lot["platform"] != search_platform:
+        if search_platform != "الكل" and lot.get("platform", "Copart") != search_platform:
             continue
-        if search_make != "الكل" and lot["make"] != search_make:
+        if search_make != "الكل" and lot.get("make", "") != search_make:
             continue
-        if search_text and search_text.lower() not in lot["vin"].lower() and search_text.lower() not in lot["id"].lower():
+        if search_text and search_text.lower() not in lot.get("vin", "").lower() and search_text.lower() not in lot.get("id", "").lower():
             continue
         if filter_by_prefs:
-            if lot["make"] not in pref_make:
+            if lot.get("make", "") not in pref_make:
                 continue
-            # مطابقة زاوية الصدمة
             match_impact = False
             for p_imp in pref_impact:
-                if p_imp.split("(")[0].strip().lower() in lot["impact"].lower() or lot["impact"].lower() in p_imp.lower():
+                if p_imp.split("(")[0].strip().lower() in lot.get("impact", "").lower() or lot.get("impact", "").lower() in p_imp.lower():
                     match_impact = True
                     break
             if not match_impact:
                 continue
-            if lot["current_bid"] > pref_budget:
+            if lot.get("current_bid", 0) > pref_budget:
                 continue
         filtered_lots.append(lot)
     
     st.markdown(f"### 📋 النتائج ({len(filtered_lots)} سيارة)")
     
-    # عرض البطاقات
     selected_lot = None
     for lot in filtered_lots:
         col_c1, col_c2 = st.columns([2.5, 1])
-        badge = "badge-copart" if lot["platform"] == "Copart" else "badge-iaai"
         
-        # حساب درجة التوافق
-        is_make_match = lot["make"] in pref_make
+        # ===== التصحيح الأساسي: استخدام .get() بدلاً من [] =====
+        platform = lot.get("platform", "Copart")
+        badge = "badge-copart" if platform == "Copart" else "badge-iaai"
+        
+        if lot.get("scraped", False):
+            source_badge = '<span class="data-source-badge data-source-real">🟢 حقيقي</span>'
+        else:
+            source_badge = '<span class="data-source-badge data-source-sim">🟡 محاكاة</span>'
+        
+        is_make_match = lot.get("make", "") in pref_make
         is_impact_match = any(
-            p_imp.split("(")[0].strip().lower() in lot["impact"].lower() or lot["impact"].lower() in p_imp.lower()
+            p_imp.split("(")[0].strip().lower() in lot.get("impact", "").lower() or lot.get("impact", "").lower() in p_imp.lower()
             for p_imp in pref_impact
         )
-        is_budget_match = lot["current_bid"] <= pref_budget
+        is_budget_match = lot.get("current_bid", 0) <= pref_budget
         matches = sum([is_make_match, is_impact_match, is_budget_match])
         if matches == 3:
             fit_score, fit_badge, fit_desc = 95, "🟢 متوافق تماماً", "يطابق جميع معاييرك"
@@ -925,12 +906,13 @@ with tab1:
         with col_c1:
             st.markdown(f"""
             <div class="premium-card" style="border-right-color: {'#10B981' if fit_score >= 90 else '#F59E0B' if fit_score >= 70 else '#EF4444'};">
-                <span class="{badge}">{lot['platform']}</span>
-                <b style="font-size:18px; color:white;">{lot['year']} {lot['model']}</b>
-                <span style="font-size:12px; color:#9CA3AF;">(لوط: {lot['id']} | VIN: {lot['vin']})</span><br>
+                <span class="{badge}">{platform}</span>
+                {source_badge}
+                <b style="font-size:18px; color:white;">{lot.get('year', '')} {lot.get('model', '')}</b>
+                <span style="font-size:12px; color:#9CA3AF;">(لوط: {lot.get('id', '')} | VIN: {lot.get('vin', '')})</span><br>
                 <div style="margin-top: 8px; font-size:13px;">
-                    • <b>الموقع:</b> {lot['location']} | <b>السند:</b> {lot['title']}<br>
-                    • <b>الصدمة:</b> {lot['impact']} | <b>السعر الحالي:</b> <span style="color:#10B981; font-weight:bold;">${lot['current_bid']:,.0f}</span><br>
+                    • <b>الموقع:</b> {lot.get('location', 'غير معروف')} | <b>السند:</b> {lot.get('title', 'غير معروف')}<br>
+                    • <b>الصدمة:</b> {lot.get('impact', 'غير معروف')} | <b>السعر الحالي:</b> <span style="color:#10B981; font-weight:bold;">${lot.get('current_bid', 0):,.0f}</span><br>
                     • <b style="color: {'#10B981' if fit_score >= 90 else '#F59E0B' if fit_score >= 70 else '#EF4444'};">{fit_badge}</b> ({fit_desc})
                 </div>
             </div>
@@ -938,31 +920,29 @@ with tab1:
         
         with col_c2:
             st.markdown("<div style='padding-top: 25px;'></div>", unsafe_allow_html=True)
-            if st.button("🔍 فتح", key=f"btn_select_{lot['id']}"):
-                st.session_state["selected_car_id"] = lot["id"]
+            if st.button("🔍 فتح", key=f"btn_select_{lot.get('id', '')}"):
+                st.session_state["selected_car_id"] = lot.get("id", "")
                 st.rerun()
     
-    # إذا تم اختيار سيارة، عرض تفاصيلها المتقدمة
     if "selected_car_id" in st.session_state:
         for lot in st.session_state.lots_db:
-            if lot["id"] == st.session_state["selected_car_id"]:
+            if lot.get("id") == st.session_state["selected_car_id"]:
                 selected_lot = lot
                 break
     
     if selected_lot:
         st.markdown("<hr style='border-color: rgba(255,255,255,0.15);'>", unsafe_allow_html=True)
-        st.markdown(f"### ⚙️ التفاصيل المتقدمة للسيارة المختارة: {selected_lot['year']} {selected_lot['model']}")
+        st.markdown(f"### ⚙️ التفاصيل المتقدمة للسيارة المختارة: {selected_lot.get('year', '')} {selected_lot.get('model', '')}")
         
-        # عرض الصور (من API أو افتراضية)
         images = selected_lot.get("images", [])
         if not images:
-            # صور افتراضية حسب الموديل
-            if "tacoma" in selected_lot["model"].lower():
+            model_lower = selected_lot.get("model", "").lower()
+            if "tacoma" in model_lower:
                 images = [
                     "https://images.unsplash.com/photo-1617469767053-d3b508a0d825?auto=format&fit=crop&q=80&w=600",
                     "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=300"
                 ]
-            elif "4runner" in selected_lot["model"].lower():
+            elif "4runner" in model_lower:
                 images = [
                     "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=600",
                     "https://images.unsplash.com/photo-1617469767053-d3b508a0d825?auto=format&fit=crop&q=80&w=300"
@@ -972,24 +952,23 @@ with tab1:
         
         col_img1, col_img2 = st.columns([1.5, 1])
         with col_img1:
-            st.image(images[0], caption=f"{selected_lot['model']} - صورة المزاد", use_container_width=True)
+            st.image(images[0], caption=f"{selected_lot.get('model', '')} - صورة المزاد", use_container_width=True)
         with col_img2:
             if len(images) > 1:
                 st.image(images[1], caption="زاوية إضافية", use_container_width=True)
             else:
                 st.info("لا توجد صور إضافية.")
         
-        # تعديل يدوي
         with st.expander("🛠️ تعديل البيانات يدوياً (لضمان الدقة)"):
             col_ed1, col_ed2, col_ed3 = st.columns(3)
             with col_ed1:
-                edit_model = st.text_input("الموديل:", value=selected_lot["model"])
-                edit_year = st.number_input("السنة:", min_value=1990, max_value=2027, value=int(selected_lot["year"]))
+                edit_model = st.text_input("الموديل:", value=selected_lot.get("model", ""))
+                edit_year = st.number_input("السنة:", min_value=1990, max_value=2027, value=int(selected_lot.get("year", 2022)))
             with col_ed2:
                 impact_list = ["أمامية يسار (Front-Left Impact)", "أمامية يمين (Front-Right Impact)", "خلفية (Rear Impact)", "جانبية (Side Impact)", "سليمة / صدمة خفيفة"]
                 current_impact_idx = 0
                 for i, imp in enumerate(impact_list):
-                    if selected_lot["impact"][:10] in imp:
+                    if selected_lot.get("impact", "")[:10] in imp:
                         current_impact_idx = i
                         break
                 edit_impact = st.selectbox("زاوية الصدمة:", impact_list, index=current_impact_idx)
@@ -998,23 +977,21 @@ with tab1:
                 loc_list = ["Texas (Houston)", "California (Sacramento)", "New York (Long Island)", "Florida (Miami)", "Pennsylvania (Salt-Belt)"]
                 current_loc_idx = 0
                 for i, loc in enumerate(loc_list):
-                    if selected_lot["location"][:10] in loc:
+                    if selected_lot.get("location", "")[:10] in loc:
                         current_loc_idx = i
                         break
                 edit_location = st.selectbox("الموقع:", loc_list, index=current_loc_idx)
-                edit_bid = st.number_input("السعر الحالي ($):", min_value=500, max_value=30000, value=int(selected_lot["current_bid"]))
+                edit_bid = st.number_input("السعر الحالي ($):", min_value=500, max_value=30000, value=int(selected_lot.get("current_bid", 3000)))
             
             if st.button("💾 حفظ التعديلات"):
-                # تحديث اللوت في قاعدة البيانات
                 for idx, lot in enumerate(st.session_state.lots_db):
-                    if lot["id"] == selected_lot["id"]:
+                    if lot.get("id") == selected_lot.get("id"):
                         st.session_state.lots_db[idx]["model"] = edit_model
                         st.session_state.lots_db[idx]["year"] = edit_year
                         st.session_state.lots_db[idx]["impact"] = edit_impact
                         st.session_state.lots_db[idx]["title"] = edit_title
                         st.session_state.lots_db[idx]["location"] = edit_location
                         st.session_state.lots_db[idx]["current_bid"] = edit_bid
-                        # تحديث التكلفة الأرضية
                         if "texas" in edit_location.lower():
                             st.session_state.lots_db[idx]["ground_cost"] = 450
                         elif "california" in edit_location.lower():
@@ -1024,13 +1001,12 @@ with tab1:
                         st.toast("✅ تم تحديث البيانات")
                         st.rerun()
         
-        # حفظ المتغيرات النشطة للاستخدام في التبويبات الأخرى
-        st.session_state["active_vin"] = selected_lot["vin"]
-        st.session_state["active_type"] = selected_lot["model"]
-        st.session_state["active_impact"] = selected_lot["impact"]
-        st.session_state["active_bid"] = selected_lot["current_bid"]
-        st.session_state["active_ground_cost"] = selected_lot["ground_cost"]
-        st.session_state["active_market_val"] = selected_lot["market_val_lyd"]
+        st.session_state["active_vin"] = selected_lot.get("vin", "")
+        st.session_state["active_type"] = selected_lot.get("model", "")
+        st.session_state["active_impact"] = selected_lot.get("impact", "")
+        st.session_state["active_bid"] = selected_lot.get("current_bid", 0)
+        st.session_state["active_ground_cost"] = selected_lot.get("ground_cost", 450)
+        st.session_state["active_market_val"] = selected_lot.get("market_val_lyd", 95000)
 
 # ==============================================
 # TAB 2: الجدوى اللوجستية
@@ -1064,7 +1040,8 @@ with tab2:
         st.metric("💰 التكلفة الإجمالية", f"${total_cost_usd:,.0f}", f"{total_cost_lyd:,.0f} د.ل")
     
     # تحليل حزام الملح
-    if "Pennsylvania" in selected_lot["location"] if selected_lot else False:
+    active_location = st.session_state.get("active_location", "")
+    if "Pennsylvania" in active_location or "salt" in active_location.lower():
         st.warning("⚠️ هذه السيارة من حزام الملح (خطر صدأ مرتفع)")
     else:
         st.success("✅ السيارة خارج حزام الملح (خطر صدأ منخفض)")
@@ -1077,7 +1054,7 @@ with tab2:
     """, unsafe_allow_html=True)
 
 # ==============================================
-# TAB 3: OBD-II (نفس السابق)
+# TAB 3: OBD-II
 # ==============================================
 with tab3:
     st.markdown("""
@@ -1090,7 +1067,6 @@ with tab3:
     if st.button("🔍 تحليل الرموز"):
         codes = [c.strip().upper() for c in dtc_input.split(",")]
         for code in codes:
-            # قاموس بسيط للرموز (يمكن توسيعه)
             if code == "P0300":
                 meaning, cause, solution, cost, severity = "إشعال عشوائي", "تلف البواجي", "استبدال البواجي", "180 د.ل", "🔴 مرتفع"
             elif code == "P0171":
@@ -1112,7 +1088,7 @@ with tab3:
             """, unsafe_allow_html=True)
 
 # ==============================================
-# TAB 4: QR Code (نفس السابق مع تعديلات بسيطة)
+# TAB 4: QR Code
 # ==============================================
 with tab4:
     st.markdown("""
@@ -1149,7 +1125,7 @@ with tab4:
         st.success("✅ تم حفظ الملف بنجاح (محاكاة)")
 
 # ==============================================
-# TAB 5: SQL (نفس السابق)
+# TAB 5: SQL
 # ==============================================
 with tab5:
     st.markdown("""
@@ -1173,7 +1149,7 @@ with tab5:
     CREATE POLICY "Allow public read-only access" ON cars FOR SELECT USING (true);
     CREATE POLICY "Allow authenticated insert access" ON cars FOR INSERT WITH CHECK (true);
     """, language="sql")
-    st.info("انسخ الكود أعلاه والصقه in SQL Editor في Supabase لتجهيز الجدول.")
+    st.info("انسخ الكود أعلاه والصقه في SQL Editor في Supabase لتجهيز الجدول.")
 
 # ==============================================
 # 7. تذييل الصفحة
