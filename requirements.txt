@@ -1,4 +1,8 @@
-pandas
+streamlit
 numpy
+pandas
 plotly
 requests
+beautifulsoup4
+cloudscraper
+lxml
