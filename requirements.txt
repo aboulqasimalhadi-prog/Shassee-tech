@@ -1,9 +1,11 @@
 streamlit
-numpy
-pandas
-plotly
 requests
 beautifulsoup4
 cloudscraper
+openai
+pillow
+opencv-python
+plotly
 lxml
-
+numpy
+pandas
