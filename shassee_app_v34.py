@@ -12,18 +12,19 @@ import random
 import hashlib
 from bs4 import BeautifulSoup
 import cloudscraper
+from PIL import Image
+from io import BytesIO
 
 # ==============================================
-# 1. إعدادات الصفحة والتصميم (نفس السابق)
+# 1. إعدادات الصفحة والتصميم
 # ==============================================
 st.set_page_config(
-    page_title="شاصي تك | SHASSEE TECH v35",
+    page_title="شاصي تك | SHASSEE TECH v36",
     page_icon="⚙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# CSS (نفس الكود السابق، اختصرته هنا لتوفير المساحة، ولكن يمكنك إعادة استخدامه من الكود القديم)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
@@ -168,7 +169,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================================
-# 2. دوال مساعدة للشعار والهيدر (نفس السابق)
+# 2. دوال مساعدة للشعار والهيدر
 # ==============================================
 def get_silver_car_b64():
     paths_to_try = [
@@ -202,7 +203,7 @@ header_html = """<div style="background: linear-gradient(135deg, rgba(13, 21, 39
 st.markdown(header_html, unsafe_allow_html=True)
 
 # ==============================================
-# 3. الشريط الجانبي (مع إضافة مفتاح ScrapingBee بوضوح)
+# 3. الشريط الجانبي (الإعدادات)
 # ==============================================
 logo_path = "shassee_tech_final_logo.png"
 logo_exists = os.path.exists(logo_path)
@@ -245,36 +246,24 @@ st.sidebar.markdown("<hr style='border-color: rgba(255,255,255,0.05);'>", unsafe
 st.sidebar.subheader("⚙️ إعدادات النظام ومفاتيح الربط")
 
 # ===== مفاتيح API =====
-# 1. مفتاح ScrapingBee (ضروري لجلب البيانات الحقيقية)
 scrapingbee_key = st.sidebar.text_input(
-    "🔑 مفتاح ScrapingBee API (لجلب البيانات الحقيقية):", 
+    "🔑 مفتاح ScrapingBee (لجلب البيانات الحقيقية):", 
     type="password", 
     value=st.session_state.get("scrapingbee_key", ""),
     help="سجل في scrapingbee.com واحصل على 1000 طلب مجاني."
 )
 st.session_state["scrapingbee_key"] = scrapingbee_key
 
-# 2. مفتاح Apibara (اختياري)
-apibara_key = st.sidebar.text_input(
-    "🔑 مفتاح Apibara API (اختياري):", 
-    type="password", 
-    value=st.session_state.get("apibara_key", ""),
-    help="أدخل مفتاحك من apibara.tech (قد لا يعمل حالياً)."
-)
-st.session_state["apibara_key"] = apibara_key
-
-# 3. مفتاح OpenAI (لتحليل الصور)
 openai_key = st.sidebar.text_input(
     "🧠 مفتاح OpenAI (لتحليل الصور بالذكاء الاصطناعي):", 
     type="password", 
     value=st.session_state.get("openai_key", ""),
-    help="للحصول على مفتاح: سجل في openai.com"
+    help="للحصول على مفتاح: سجل في openai.com وأضف رصيداً."
 )
 st.session_state["openai_key"] = openai_key
 
 st.sidebar.markdown("<hr style='border-color: rgba(255,255,255,0.05);'>", unsafe_allow_html=True)
 
-# 4. مفاتيح Supabase (تظهر فقط في الوضع السحابي)
 integration_mode = st.sidebar.selectbox(
     "🔌 نمط تشغيل النظام:",
     ["🎯 وضع المحاكاة الذكي (Demo Mode)", "⚡ الوضع السحابي الحقيقي (Live Cloud)"]
@@ -297,11 +286,10 @@ EXCHANGE_RATE = 9.4
 SHIPPING_COST = 2250
 
 # ==============================================
-# 4. دوال جلب البيانات (محسنة مع دالة get_platform)
+# 4. دوال جلب البيانات
 # ==============================================
 
 def get_platform(lot):
-    """دالة مساعدة لإرجاع المنصة بشكل آمن، مع قيمة افتراضية"""
     return lot.get("platform", "Copart")
 
 def extract_clean_url(url):
@@ -354,8 +342,6 @@ def fetch_from_cloudscraper(url):
     return None
 
 def universal_extract_from_html(html, platform, lot_id):
-    from bs4 import BeautifulSoup
-    import json
     soup = BeautifulSoup(html, 'lxml')
     html_lower = html.lower()
     if "cloudflare" in html_lower or "enable javascript" in html_lower or "captcha" in html_lower:
@@ -374,7 +360,7 @@ def universal_extract_from_html(html, platform, lot_id):
         "scraped": True
     }
     
-    # محاولة استخراج من JSON-LD
+    # JSON-LD
     for script in soup.find_all("script", type="application/ld+json"):
         try:
             schema = json.loads(script.string)
@@ -419,7 +405,7 @@ def universal_extract_from_html(html, platform, lot_id):
         if img_url and img_url not in data["images"]:
             data["images"].append(img_url)
     
-    # CSS selectors
+    # CSS
     title_tag = soup.select_one("h1[data-uname='lotDetailHeader']") or soup.select_one("h1.lot-title")
     if title_tag:
         title_text = title_tag.text.strip()
@@ -582,7 +568,6 @@ def smart_parse_auction_url(url):
     st.session_state["last_scrape_status"] = ""
     st.session_state["last_scrape_error"] = ""
     
-    # 1. ScrapingBee (الأولوية)
     scrapingbee_key = st.session_state.get("scrapingbee_key", "")
     if scrapingbee_key:
         html, status, err = fetch_from_scrapingbee(clean_url, scrapingbee_key)
@@ -596,7 +581,6 @@ def smart_parse_auction_url(url):
         else:
             st.session_state["last_scrape_error"] = f"فشل السحب بـ ScrapingBee: {err}"
     
-    # 2. Cloudscraper
     html = fetch_from_cloudscraper(clean_url)
     if html:
         data = universal_extract_from_html(html, platform, lot_id)
@@ -607,12 +591,113 @@ def smart_parse_auction_url(url):
             if not st.session_state.get("last_scrape_error"):
                 st.session_state["last_scrape_error"] = "حظر حماية Cloudflare."
     
-    # 3. التخمين الذكي (احتياطي)
     st.session_state["last_scrape_status"] = "محاكاة احتياطية"
     return generate_smart_guess(clean_url, platform, lot_id)
 
 # ==============================================
-# 5. تهيئة قاعدة البيانات المحلية (lots_db)
+# 5. دوال تحليل الصور بالذكاء الاصطناعي
+# ==============================================
+
+def analyze_car_image_with_openai(image_bytes, api_key):
+    """تحليل صورة السيارة باستخدام OpenAI Vision API"""
+    if not api_key:
+        return "يرجى تفعيل مفتاح OpenAI من الإعدادات الجانبية."
+    try:
+        import openai
+        openai.api_key = api_key
+        # تحويل الصورة إلى base64
+        img_b64 = base64.b64encode(image_bytes).decode()
+        data_url = f"data:image/jpeg;base64,{img_b64}"
+        
+        response = openai.ChatCompletion.create(
+            model="gpt-4-vision-preview",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "قم بتحليل هذه الصورة لسيارة متضررة. حدد المناطق المتضررة (مصد أمامي، رفرف، باب، إطار، إلخ) ووصف الضرر، واكتشاف الصدأ إن وجد. أعطِ قائمة بالقطع المتضررة مع تقدير لشدتها (بسيط، متوسط، شديد)."},
+                        {"type": "image_url", "image_url": data_url}
+                    ]
+                }
+            ],
+            max_tokens=500
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"فشل التحليل: {str(e)}"
+
+def detect_rust_with_opencv(image_bytes):
+    """كشف الصدأ باستخدام OpenCV (بديل بسيط)"""
+    try:
+        import cv2
+        import numpy as np
+        img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        # مدى اللون البرتقالي/البني (الصدأ)
+        lower = np.array([0, 50, 50])
+        upper = np.array([30, 255, 255])
+        mask = cv2.inRange(hsv, lower, upper)
+        rust_percentage = (np.sum(mask > 0) / mask.size) * 100
+        return rust_percentage
+    except:
+        return 0.0
+
+# ==============================================
+# 6. قاعدة بيانات قطع الغيار (OEM)
+# ==============================================
+OEM_DB = {
+    "tacoma": {
+        "مصد خلفي": "52159-04020",
+        "مصباح خلفي LED أيسر": "81560-04180",
+        "باب حوض خلفي": "65700-04090"
+    },
+    "4runner": {
+        "باب أمامي أيسر": "67002-35110",
+        "رفرف جانبي أيسر": "53812-35220",
+        "مقصات جانبية أيسر": "48069-35120"
+    },
+    "tundra": {
+        "رادياتير": "16400-0C210",
+        "مقص تعليق أيسر": "48069-34010",
+        "رفرف أمامي أيسر": "53812-34080"
+    }
+}
+
+def get_oem_parts_from_text(model, damage_text):
+    """استخراج أرقام OEM بناءً على الموديل ووصف الضرر"""
+    model_key = model.lower()
+    if model_key not in OEM_DB:
+        return []
+    found = []
+    for part_name, oem_code in OEM_DB[model_key].items():
+        if any(word in damage_text.lower() for word in part_name.split()):
+            found.append({"part": part_name, "oem": oem_code})
+    return found
+
+# ==============================================
+# 7. نموذج 3D تفاعلي
+# ==============================================
+def create_3d_chassis(damage_levels):
+    """إنشاء نموذج 3D مع تلوين حسب شدة الضرر"""
+    x = [0, 0, 1, 1, 0, 0, 1, 1, 0.5, 0.5]
+    y = [0, 4, 4, 0, 0, 4, 4, 0, 0, 4]
+    z = [0, 0, 0, 0, 1, 1, 1, 1, 0.5, 1.2]
+    fig = go.Figure(data=[go.Mesh3d(
+        x=x, y=y, z=z,
+        intensity=damage_levels,
+        colorscale=[[0, '#10B981'], [0.5, '#F59E0B'], [1, '#EF4444']],
+        showscale=True,
+        colorbar_title="شدة الضرر"
+    )])
+    fig.update_layout(scene=dict(
+        xaxis=dict(showticklabels=False, backgroundcolor="#060913"),
+        yaxis=dict(showticklabels=False, backgroundcolor="#060913"),
+        zaxis=dict(showticklabels=False, backgroundcolor="#060913")
+    ), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=400)
+    return fig
+
+# ==============================================
+# 8. تهيئة قاعدة البيانات المحلية
 # ==============================================
 if "selected_car_id" not in st.session_state:
     st.session_state["selected_car_id"] = "LOT-3849102"
@@ -665,28 +750,27 @@ if "lots_db" not in st.session_state:
         },
     ]
 
-# ===== التصحيح الإلزامي: تأمين جميع العناصر =====
 for lot in st.session_state.lots_db:
     if "platform" not in lot:
-        # استنتاج من الرابط أو المعرف
         if "iaai" in lot.get("url", "").lower() or "IAAI" in lot.get("id", ""):
             lot["platform"] = "IAAI"
         else:
             lot["platform"] = "Copart"
 
 # ==============================================
-# 6. واجهة التطبيق (Tabs)
+# 9. واجهة التطبيق (Tabs)
 # ==============================================
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🔍 بحث موحد", 
     "📊 جدوى لوجستية", 
     "🔌 OBD-II",
     "📜 QR",
-    "⚙️ SQL"
+    "⚙️ SQL",
+    "🧠 تحليل ذكي (AI)"
 ])
 
 # ==============================================
-# TAB 1: البحث الموحد (مع إصلاح KeyError نهائياً)
+# TAB 1: البحث الموحد (نفس السابق مع استخدام get_platform)
 # ==============================================
 with tab1:
     st.markdown("""
@@ -765,7 +849,6 @@ with tab1:
     
     filtered_lots = []
     for lot in st.session_state.lots_db:
-        # استخدام get_platform() بدلاً من lot["platform"] مباشرة
         if search_platform != "الكل" and get_platform(lot) != search_platform:
             continue
         if search_make != "الكل" and lot.get("make", "") != search_make:
@@ -792,7 +875,6 @@ with tab1:
     for lot in filtered_lots:
         col_c1, col_c2 = st.columns([2.5, 1])
         
-        # ===== استخدام get_platform() هنا بدلاً من lot["platform"] =====
         platform = get_platform(lot)
         badge = "badge-copart" if platform == "Copart" else "badge-iaai"
         
@@ -921,7 +1003,7 @@ with tab1:
         st.session_state["active_market_val"] = selected_lot.get("market_val_lyd", 95000)
 
 # ==============================================
-# TAB 2: الجدوى اللوجستية
+# TAB 2: الجدوى اللوجستية (نفس السابق)
 # ==============================================
 with tab2:
     st.markdown("""
@@ -958,7 +1040,7 @@ with tab2:
     """, unsafe_allow_html=True)
 
 # ==============================================
-# TAB 3: OBD-II
+# TAB 3: OBD-II (نفس السابق)
 # ==============================================
 with tab3:
     st.markdown("""
@@ -992,7 +1074,7 @@ with tab3:
             """, unsafe_allow_html=True)
 
 # ==============================================
-# TAB 4: QR Code
+# TAB 4: QR Code (نفس السابق)
 # ==============================================
 with tab4:
     st.markdown("""
@@ -1028,7 +1110,7 @@ with tab4:
         st.success("✅ تم حفظ الملف بنجاح (محاكاة)")
 
 # ==============================================
-# TAB 5: SQL
+# TAB 5: SQL (نفس السابق)
 # ==============================================
 with tab5:
     st.markdown("""
@@ -1055,7 +1137,98 @@ with tab5:
     st.info("انسخ الكود أعلاه والصقه في SQL Editor في Supabase لتجهيز الجدول.")
 
 # ==============================================
-# 7. تذييل الصفحة
+# TAB 6: تحليل ذكي (AI) – مع رفع الصور والتحليل
+# ==============================================
+with tab6:
+    st.markdown("""
+    <div class="premium-card" style="border-right-color: #8B5CF6;">
+        <h3 style="color: #8B5CF6; margin-top:0px;">🧠 التحليل الذكي بالذكاء الاصطناعي</h3>
+        قم برفع صور السيارة أو استخدام صور المزاد لتحليل الأضرار واكتشاف الصدأ وتحديد قطع الغيار بأرقامها المصنعية.
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # اختيار مصدر الصورة
+    source_option = st.radio(
+        "اختر مصدر الصورة:",
+        ["رفع صورة من جهازي", "استخدام صورة من المزاد (السيارة المختارة)"]
+    )
+    
+    image_bytes = None
+    if source_option == "رفع صورة من جهازي":
+        uploaded_file = st.file_uploader("اختر صورة السيارة", type=["jpg", "jpeg", "png"])
+        if uploaded_file:
+            image_bytes = uploaded_file.read()
+    else:
+        # استخدام صورة من السيارة المختارة
+        selected_lot = None
+        for lot in st.session_state.lots_db:
+            if lot.get("id") == st.session_state.get("selected_car_id"):
+                selected_lot = lot
+                break
+        if selected_lot and selected_lot.get("images"):
+            try:
+                img_url = selected_lot["images"][0]
+                response = requests.get(img_url, timeout=10)
+                if response.status_code == 200:
+                    image_bytes = response.content
+                else:
+                    st.warning("تعذر جلب الصورة من المزاد، حاول رفع صورة يدوياً.")
+            except:
+                st.warning("تعذر جلب الصورة، حاول رفع صورة يدوياً.")
+        else:
+            st.info("لم يتم اختيار سيارة أو لا توجد صور لها، يرجى رفع صورة يدوياً.")
+    
+    if image_bytes:
+        # عرض الصورة
+        st.image(image_bytes, caption="الصورة المختارة للتحليل", use_container_width=True)
+        
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            analyze_btn = st.button("🔍 تحليل الصورة بالذكاء الاصطناعي", use_container_width=True)
+        with col_btn2:
+            rust_btn = st.button("🦀 كشف الصدأ", use_container_width=True)
+        
+        if analyze_btn:
+            openai_key = st.session_state.get("openai_key", "")
+            if not openai_key:
+                st.warning("⚠️ يرجى إدخال مفتاح OpenAI في الشريط الجانبي أولاً.")
+            else:
+                with st.spinner("⏳ جاري تحليل الصورة... قد يستغرق 10-20 ثانية"):
+                    result = analyze_car_image_with_openai(image_bytes, openai_key)
+                    st.markdown("### 📝 نتائج التحليل:")
+                    st.write(result)
+                    
+                    # استخراج أرقام OEM
+                    model = st.session_state.get("active_type", "Tacoma")
+                    oem_parts = get_oem_parts_from_text(model, result)
+                    if oem_parts:
+                        st.markdown("### 🔩 قطع الغيار المتضررة (مع الأرقام المصنعية):")
+                        for part in oem_parts:
+                            st.markdown(f"- **{part['part']}**: `{part['oem']}`")
+                    else:
+                        st.info("لم يتم التعرف على قطع غيار محددة من هذا التحليل (يمكنك إضافتها يدوياً).")
+        
+        if rust_btn:
+            with st.spinner("⏳ جاري تحليل الصدأ..."):
+                rust_percent = detect_rust_with_opencv(image_bytes)
+                if rust_percent > 0:
+                    st.metric("نسبة الصدأ المقدرة", f"{rust_percent:.1f}%")
+                    if rust_percent > 10:
+                        st.warning("⚠️ نسبة صدأ مرتفعة، يوصى بفحص دقيق للهيكل.")
+                    else:
+                        st.success("✅ نسبة صدأ منخفضة، السيارة بحالة جيدة.")
+                else:
+                    st.info("لم يتمكن النظام من تقدير نسبة الصدأ (تأكد من وضوح الصورة).")
+    
+    # نموذج 3D (عرض توضيحي)
+    with st.expander("🗺️ عرض الهيكل 3D مع تمييز الأضرار (افتراضي)"):
+        # يمكن تحديث هذه القيم بناءً على تحليل الصور
+        intensities = [0.1, 0.9, 0.9, 0.1, 0.1, 0.9, 0.9, 0.1, 0.2, 0.8]
+        fig = create_3d_chassis(intensities)
+        st.plotly_chart(fig, use_container_width=True)
+
+# ==============================================
+# 10. تذييل الصفحة
 # ==============================================
 st.markdown("""
 ---
